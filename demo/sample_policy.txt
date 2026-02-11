@@ -1,0 +1,107 @@
+# ACME Corporation Data Compliance Policy
+## Version 1.0 - Effective Date: January 2024
+
+### 1. Introduction
+
+This document outlines the data compliance requirements for ACME Corporation. All employees and systems must adhere to these policies to ensure regulatory compliance and data protection.
+
+---
+
+## 2. Personal Data Protection Rules
+
+### Rule 2.1: Email Validation
+All customer email addresses stored in the system MUST be in a valid email format containing an "@" symbol and a domain extension. Invalid email addresses must be flagged for correction.
+
+**Severity: Medium**
+**Applies to: customers table, email column**
+
+### Rule 2.2: Age Verification
+Customer age must be 18 years or older for account creation. Any records with age below 18 must be flagged as potential compliance violations.
+
+**Severity: High**
+**Applies to: customers table, age column**
+
+### Rule 2.3: Phone Number Format
+All phone numbers must follow a standardized format and contain only numeric characters (with optional + prefix for international numbers). Phone numbers with letters or special characters are non-compliant.
+
+**Severity: Low**
+**Applies to: customers table, phone column**
+
+---
+
+## 3. Financial Data Rules
+
+### Rule 3.1: Positive Account Balance
+Customer account balances should not be negative without an approved credit line. Negative balances without credit approval must be reviewed.
+
+**Severity: High**
+**Applies to: accounts table, balance column**
+
+### Rule 3.2: Transaction Amount Limits
+Individual transactions exceeding $10,000 must have additional verification documentation. Large transactions without verification flags are non-compliant.
+
+**Severity: Critical**
+**Applies to: transactions table, amount column**
+
+### Rule 3.3: Currency Code Validation
+All monetary values must have a valid ISO 4217 currency code (e.g., USD, EUR, GBP). Records with invalid or missing currency codes are non-compliant.
+
+**Severity: Medium**
+**Applies to: transactions table, currency column**
+
+---
+
+## 4. Data Retention Rules
+
+### Rule 4.1: Record Timestamps
+All records must have valid created_at and updated_at timestamps. Records with null or future timestamps are non-compliant.
+
+**Severity: Low**
+**Applies to: All tables with timestamp columns**
+
+### Rule 4.2: Soft Delete Compliance
+Deleted records must use soft delete (is_deleted flag) rather than hard delete for audit purposes. The deleted_at timestamp must be set when is_deleted is true.
+
+**Severity: Medium**
+**Applies to: All tables with soft delete columns**
+
+---
+
+## 5. Data Quality Rules
+
+### Rule 5.1: Required Fields
+Critical fields such as customer name, email, and account status must not be null or empty. Missing required data is a compliance violation.
+
+**Severity: High**
+**Applies to: customers table, name/email/status columns**
+
+### Rule 5.2: Status Value Validation
+Status fields must contain only predefined valid values (active, inactive, suspended, pending). Invalid status values are non-compliant.
+
+**Severity: Medium**
+**Applies to: customers table, status column**
+
+---
+
+## 6. Enforcement
+
+Violations of these policies will be:
+1. Automatically detected by the compliance monitoring system
+2. Flagged for human review
+3. Assigned severity levels based on the rule violated
+4. Tracked until resolution
+
+All compliance violations must be addressed within:
+- Critical: 24 hours
+- High: 72 hours
+- Medium: 1 week
+- Low: 2 weeks
+
+---
+
+## 7. Contact
+
+For questions about this policy, contact the Compliance Team at compliance@acme-corp.example.com.
+
+*Document ID: ACME-POLICY-2024-001*
+*Last Updated: January 15, 2024*
