@@ -135,18 +135,20 @@ async def upload_policy(
     Raises:
         HTTPException: 400 for invalid PDF, 413 for file too large, 500 for server errors
     """
-    # Validate content type
+    # Validate content type - be lenient, rely on magic bytes check in parser
+    logger.info(f"Upload attempt: filename={file.filename}, content_type={file.content_type}, size={file.size}")
     if file.content_type and file.content_type not in (
         "application/pdf",
         "application/x-pdf",
         "application/octet-stream",
+        None,
     ):
         # Also allow if filename ends with .pdf
         if not (file.filename and file.filename.lower().endswith(".pdf")):
-            logger.warning(f"Invalid content type: {file.content_type}")
+            logger.warning(f"Invalid content type: {file.content_type}, filename: {file.filename}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Please upload a valid PDF file.",
+                detail=f"Please upload a valid PDF file. Received content type: {file.content_type}",
             )
     
     try:
