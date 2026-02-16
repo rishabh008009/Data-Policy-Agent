@@ -100,8 +100,10 @@ class PolicyParserService:
             raise UnsupportedFormatError("Please upload a valid PDF file.")
         
         # Check for PDF magic bytes (PDF files start with %PDF)
-        if not content.startswith(b'%PDF'):
-            logger.warning(f"Invalid PDF magic bytes. First 10 bytes: {content[:10]}")
+        # Some PDFs may have whitespace or BOM before the header
+        pdf_header = content[:1024]  # Check first 1KB for %PDF marker
+        if b'%PDF' not in pdf_header:
+            logger.warning(f"Invalid PDF magic bytes. First 20 bytes: {content[:20]!r}")
             raise UnsupportedFormatError("Please upload a valid PDF file.")
         
         # Extract text using pdfplumber
