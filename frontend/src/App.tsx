@@ -1,7 +1,9 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { DashboardPage, PoliciesPage, ViolationsPage, SettingsPage } from './pages';
+import Login from "./pages/Login";
 
+<Route path="/login" element={<Login />} />
 /**
  * Main application component with routing configuration.
  * Uses React Router for navigation between pages.
