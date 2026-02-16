@@ -4,11 +4,18 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
+from pydantic import BaseModel
+from jose import jwt
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi import HTTPException
+from fastapi import Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 
 from app.config import get_settings
 from app.database import close_db
@@ -42,8 +49,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     print("Monitoring scheduler stopped")
     
     await close_db()
-
-
+    SECRET_KEY = "hackathon-secret-key"
+    ALGORITHM = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES = 60
+class Login(BaseModel):
+    email: str
+    password: str
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     settings = get_settings()
@@ -76,7 +87,32 @@ def create_app() -> FastAPI:
             "app_name": settings.app_name,
             "version": settings.app_version,
         }
+    # Auth login endpoint
+    @app.post("/api/auth/login", tags=["Auth"])
+    def login(data: Login):
+        # Simple hardcoded validation (hackathon only)
+        if data.email != "admin@test.com" or data.password != "password":
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        payload = {
+        "sub": data.email,
+        "exp": expire
+    }
 
+    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+    return {
+        "access_token": token,
+        "token_type": "bearer"
+    }
+    @app.get("/api/protected")
+def protected_route(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        return {"message": "You are authenticated"}
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
+        
     # API root endpoint
     @app.get("/api", tags=["Root"])
     async def api_root() -> dict:
