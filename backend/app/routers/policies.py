@@ -136,12 +136,18 @@ async def upload_policy(
         HTTPException: 400 for invalid PDF, 413 for file too large, 500 for server errors
     """
     # Validate content type
-    if file.content_type and file.content_type != "application/pdf":
-        logger.warning(f"Invalid content type: {file.content_type}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Please upload a valid PDF file.",
-        )
+    if file.content_type and file.content_type not in (
+        "application/pdf",
+        "application/x-pdf",
+        "application/octet-stream",
+    ):
+        # Also allow if filename ends with .pdf
+        if not (file.filename and file.filename.lower().endswith(".pdf")):
+            logger.warning(f"Invalid content type: {file.content_type}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please upload a valid PDF file.",
+            )
     
     try:
         # Process the policy document

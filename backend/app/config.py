@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/policy_agent"
 
     # LLM settings
-    llm_provider: Literal["openai", "gemini"] = "openai"
+    llm_provider: Literal["openai", "gemini", "google"] = "openai"
     openai_api_key: str = ""
     gemini_api_key: str = ""
     llm_model: str = "gpt-4o"

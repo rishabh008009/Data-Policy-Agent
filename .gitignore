@@ -35,3 +35,7 @@ htmlcov/
 
 # Build outputs (keep frontend/dist for deployment)
 backend/dist/
+
+
+# Presentation files
+PPT_CONTENT.md

@@ -344,7 +344,7 @@ class LLMClient:
                 api_key=settings.openai_api_key,
                 model=settings.llm_model
             )
-        elif provider == "gemini":
+        elif provider in ("gemini", "google"):
             if not settings.gemini_api_key:
                 raise ValueError("Gemini API key is required when using Gemini provider")
             # Map common model names to Gemini equivalents
