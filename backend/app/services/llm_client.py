@@ -272,7 +272,7 @@ class OpenAIClient(BaseLLMClient):
 class GeminiClient(BaseLLMClient):
     """LLM client implementation using Google Gemini API."""
 
-    def __init__(self, api_key: str, model: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: str, model: str = "gemini-2.0-flash"):
         """Initialize the Gemini client.
         
         Args:
@@ -350,7 +350,9 @@ class LLMClient:
             # Map common model names to Gemini equivalents
             model = settings.llm_model
             if model.startswith("gpt"):
-                model = "gemini-1.5-flash"  # Default Gemini model
+                model = "gemini-2.0-flash"  # Default Gemini model
+            elif model in ("gemini", "gemini-1.5-flash", "gemini-1.5-pro"):
+                model = "gemini-2.0-flash"  # Use current model
             return GeminiClient(
                 api_key=settings.gemini_api_key,
                 model=model
