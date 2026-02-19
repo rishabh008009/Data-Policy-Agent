@@ -277,90 +277,54 @@ class PolicyParserService:
         llm_client: Optional[LLMClient] = None,
     ) -> Policy:
         """Full pipeline: extract text, parse rules, store results.
-        
-        This method orchestrates the complete policy processing workflow:
-        1. Create a Policy record with PROCESSING status
-        2. Extract text from the PDF
-        3. Send text to LLM for rule extraction
-        4. Store the extracted rules with reference to the policy
-        5. Update policy status to COMPLETED
-        
-        Args:
-            pdf_file: The uploaded PDF file (FastAPI UploadFile).
-            db: Optional database session. If not provided, a new session
-                will be created.
-            llm_client: Optional LLM client instance. If not provided, a new one
-                       will be created.
-            
-        Returns:
-            The Policy model instance with associated ComplianceRules.
-            
-        Raises:
-            PDFExtractionError: If the PDF cannot be read or is invalid.
-            ValueError: If the LLM response cannot be parsed into valid rules.
+
+        Performs all non-DB work (PDF extraction, LLM call) first,
+        then saves everything to the database in one go to avoid
+        greenlet context issues with SQLAlchemy async sessions.
         """
-        # Determine if we need to manage our own session
+        # Step 1: Extract text from PDF (no DB needed)
+        extracted_text = await self.extract_text(pdf_file)
+
+        # Step 2: Parse rules using LLM (no DB needed)
+        # We need a temporary policy_id for rule creation, so generate one now
+        policy_id = uuid.uuid4()
+        compliance_rules_data = await self._extract_rules_from_llm(
+            text=extracted_text,
+            policy_id=policy_id,
+            llm_client=llm_client,
+        )
+
+        # Step 3: Now do all DB work together
         manage_session = db is None
         session = db
-        
+
         try:
             if manage_session:
                 session = async_session_maker()
-            
-            # Create initial policy record with PROCESSING status
+
             policy = Policy(
+                id=policy_id,
                 filename=pdf_file.filename or "unknown.pdf",
-                status=PolicyStatus.PROCESSING.value,
+                status=PolicyStatus.COMPLETED.value,
+                raw_text=extracted_text,
             )
             session.add(policy)
-            await session.flush()  # Get the policy ID without committing
-            
-            logger.info(f"Created policy record {policy.id} for file '{policy.filename}'")
-            
-            try:
-                # Step 1: Extract text from PDF
-                extracted_text = await self.extract_text(pdf_file)
-                policy.raw_text = extracted_text
-                
-                # Step 2: Parse rules using LLM
-                compliance_rules = await self.parse_rules(
-                    text=extracted_text,
-                    policy_id=str(policy.id),
-                    llm_client=llm_client,
-                )
-                
-                # Step 3: Add rules to the session (they reference the policy)
-                for rule in compliance_rules:
-                    session.add(rule)
-                
-                # Step 4: Update policy status to COMPLETED
-                policy.status = PolicyStatus.COMPLETED.value
-                
-                # Commit all changes
-                if manage_session:
-                    await session.commit()
-                    # Refresh to get the relationships loaded
-                    await session.refresh(policy)
-                else:
-                    await session.flush()
-                
-                logger.info(
-                    f"Successfully processed policy {policy.id}: "
-                    f"extracted {len(compliance_rules)} rules"
-                )
-                
-                return policy
-                
-            except (PDFExtractionError, ValueError) as e:
-                # Update policy status to FAILED
-                policy.status = PolicyStatus.FAILED.value
-                if manage_session:
-                    await session.commit()
-                else:
-                    await session.flush()
-                logger.error(f"Failed to process policy {policy.id}: {e}")
-                raise
-                
+
+            for rule in compliance_rules_data:
+                session.add(rule)
+
+            if manage_session:
+                await session.commit()
+                await session.refresh(policy)
+            else:
+                await session.flush()
+
+            logger.info(
+                f"Successfully processed policy {policy.id}: "
+                f"extracted {len(compliance_rules_data)} rules"
+            )
+            return policy
+
         except Exception as e:
             if manage_session and session:
                 await session.rollback()
@@ -368,6 +332,40 @@ class PolicyParserService:
         finally:
             if manage_session and session:
                 await session.close()
+
+    async def _extract_rules_from_llm(
+        self,
+        text: str,
+        policy_id: uuid.UUID,
+        llm_client: Optional[LLMClient] = None,
+    ) -> List[ComplianceRule]:
+        """Extract rules via LLM and build ComplianceRule objects (no DB interaction)."""
+        client = llm_client or get_llm_client()
+
+        logger.info(f"Sending policy text to LLM for rule extraction (policy_id={policy_id})")
+        raw_rules = await client.extract_rules(text)
+
+        compliance_rules: List[ComplianceRule] = []
+        for raw_rule in raw_rules:
+            severity_str = raw_rule.get("severity", "medium").lower()
+            try:
+                severity = Severity(severity_str)
+            except ValueError:
+                severity = Severity.MEDIUM
+
+            rule = ComplianceRule(
+                policy_id=policy_id,
+                rule_code=raw_rule.get("rule_code", ""),
+                description=raw_rule.get("description", ""),
+                evaluation_criteria=raw_rule.get("evaluation_criteria", ""),
+                target_table=raw_rule.get("target_entities"),
+                severity=severity.value,
+                is_active=True,
+            )
+            compliance_rules.append(rule)
+
+        logger.info(f"Parsed {len(compliance_rules)} compliance rules from policy {policy_id}")
+        return compliance_rules
 
 
 def get_policy_parser_service() -> PolicyParserService:

@@ -285,27 +285,22 @@ class GeminiClient(BaseLLMClient):
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel(model)
 
+    def _generate_sync(self, prompt: str) -> str:
+        """Synchronous Gemini generation (runs in thread)."""
+        response = self.model.generate_content(
+            prompt,
+            generation_config={"temperature": 0.1},
+        )
+        return response.text or ""
+
     async def _generate(self, prompt: str) -> str:
         """Generate a response using Gemini API.
         
-        Args:
-            prompt: The prompt to send to the model.
-            
-        Returns:
-            The generated response text.
+        Runs the synchronous Gemini call in a separate thread
+        to avoid blocking the async event loop and breaking
+        SQLAlchemy's greenlet context.
         """
-        # Run synchronous Gemini call in a thread to avoid blocking the async event loop
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: self.model.generate_content(
-                prompt,
-                generation_config={
-                    "temperature": 0.1,
-                },
-            ),
-        )
-        return response.text or ""
+        return await asyncio.to_thread(self._generate_sync, prompt)
 
 
 class LLMClient:
