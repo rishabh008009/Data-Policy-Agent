@@ -200,7 +200,7 @@ async def upload_policy(
         logger.error(f"Unexpected error processing policy: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred while processing the policy document.",
+            detail=f"Error processing policy: {str(e)}",
         )
 
 
