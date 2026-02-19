@@ -25,36 +25,38 @@ from app.services.scheduler import get_monitoring_scheduler, reset_monitoring_sc
 # Path to the frontend build directory
 FRONTEND_DIR = Path(__file__).parent.parent.parent / "frontend" / "dist"
 
+# Auth constants
+SECRET_KEY = "hackathon-secret-key"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+security = HTTPBearer()
+
+
+class Login(BaseModel):
+    email: str
+    password: str
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager for startup and shutdown events."""
-    # Startup: Initialize resources
     settings = get_settings()
     print(f"Starting {settings.app_name} v{settings.app_version}")
     print(f"Debug mode: {settings.debug}")
-    
-    # Start the monitoring scheduler
+
     scheduler = get_monitoring_scheduler()
     scheduler.start()
     print("Monitoring scheduler started")
-    
+
     yield
-    
-    # Shutdown: Cleanup resources
+
     print("Shutting down application...")
-    
-    # Shutdown the monitoring scheduler
     reset_monitoring_scheduler()
     print("Monitoring scheduler stopped")
-    
     await close_db()
-    SECRET_KEY = "hackathon-secret-key"
-    ALGORITHM = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES = 60
-class Login(BaseModel):
-    email: str
-    password: str
+
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     settings = get_settings()
@@ -81,42 +83,33 @@ def create_app() -> FastAPI:
     # Health check endpoint
     @app.get("/health", tags=["Health"])
     async def health_check() -> dict:
-        """Health check endpoint."""
         return {
             "status": "healthy",
             "app_name": settings.app_name,
             "version": settings.app_version,
         }
+
     # Auth login endpoint
     @app.post("/api/auth/login", tags=["Auth"])
     def login(data: Login):
-        # Simple hardcoded validation (hackathon only)
         if data.email != "admin@test.com" or data.password != "password":
             raise HTTPException(status_code=401, detail="Invalid credentials")
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        payload = {
-        "sub": data.email,
-        "exp": expire
-    }
+        payload = {"sub": data.email, "exp": expire}
+        token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+        return {"access_token": token, "token_type": "bearer"}
 
-    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-
-    return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
     @app.get("/api/protected")
-def protected_route(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    try:
-        jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        return {"message": "You are authenticated"}
-    except:
-        raise HTTPException(status_code=401, detail="Invalid token")
-        
+    def protected_route(credentials: HTTPAuthorizationCredentials = Depends(security)):
+        try:
+            jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+            return {"message": "You are authenticated"}
+        except Exception:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
     # API root endpoint
     @app.get("/api", tags=["Root"])
     async def api_root() -> dict:
-        """API root endpoint with available routes."""
         return {
             "message": f"Welcome to {settings.app_name} API",
             "version": settings.app_version,
@@ -133,18 +126,12 @@ def protected_route(credentials: HTTPAuthorizationCredentials = Depends(security
 
     # Serve frontend static files if the build exists
     if FRONTEND_DIR.exists():
-        # Mount static assets
         app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="assets")
-        
-        # Catch-all route to serve the React app for client-side routing
+
         @app.get("/{full_path:path}")
         async def serve_frontend(request: Request, full_path: str):
-            """Serve the React frontend for all non-API routes."""
-            # Don't serve frontend for API routes
             if full_path.startswith("api/") or full_path == "health":
                 return {"detail": "Not Found"}
-            
-            # Serve index.html for all other routes (React handles routing)
             index_path = FRONTEND_DIR / "index.html"
             if index_path.exists():
                 return FileResponse(index_path)
