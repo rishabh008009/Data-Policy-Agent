@@ -113,7 +113,6 @@ class ErrorResponse(BaseModel):
 )
 async def upload_policy(
     file: UploadFile = File(..., description="PDF policy document to upload"),
-    db: AsyncSession = Depends(get_db),
     parser: PolicyParserService = Depends(get_policy_parser_service),
 ) -> PolicyUploadResponse:
     """Upload and process a PDF policy document.
@@ -153,7 +152,7 @@ async def upload_policy(
     
     try:
         # Process the policy document
-        policy = await parser.process_policy(pdf_file=file, db=db)
+        policy = await parser.process_policy(pdf_file=file)
         
         # Get the rule count
         rule_count = len(policy.rules) if policy.rules else 0
