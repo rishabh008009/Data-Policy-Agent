@@ -1,4 +1,4 @@
-import React, { useState, FormEvent } from "react";
+import React, { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
