@@ -39,3 +39,7 @@ backend/dist/
 
 # Presentation files
 PPT_CONTENT.md
+
+# Sample data (large CSV, local-only scripts)
+sample_data/aml_transactions.csv
+sample_data/import_to_supabase.py
