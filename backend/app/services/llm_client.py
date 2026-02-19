@@ -5,6 +5,7 @@ to extract compliance rules, generate SQL queries, explain violations,
 and suggest remediations.
 """
 
+import asyncio
 import json
 import logging
 from abc import ABC, abstractmethod
@@ -293,12 +294,16 @@ class GeminiClient(BaseLLMClient):
         Returns:
             The generated response text.
         """
-        # Gemini's generate_content is synchronous, but we wrap it for consistency
-        response = self.model.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0.1,  # Low temperature for more consistent outputs
-            }
+        # Run synchronous Gemini call in a thread to avoid blocking the async event loop
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: self.model.generate_content(
+                prompt,
+                generation_config={
+                    "temperature": 0.1,
+                },
+            ),
         )
         return response.text or ""
 
