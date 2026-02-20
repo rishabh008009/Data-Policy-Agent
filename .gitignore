@@ -40,6 +40,7 @@ backend/dist/
 # Presentation files
 PPT_CONTENT.md
 UI_UX_PROTOTYPE.html
+PRESENTATION_CHEATSHEET.md
 
 # Sample data (large CSV, local-only scripts)
 sample_data/aml_transactions.csv
