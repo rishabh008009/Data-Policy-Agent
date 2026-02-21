@@ -327,12 +327,15 @@ async def _get_next_scan_time(db: AsyncSession) -> Optional[datetime]:
     Returns:
         Datetime of the next scheduled scan, or None if no scan is scheduled
     """
+    now = datetime.now(timezone.utc)
+    
     # First try to get from the scheduler (most accurate)
     try:
         scheduler = get_monitoring_scheduler()
         scheduler_status = scheduler.get_status()
         if scheduler_status.is_enabled and scheduler_status.next_run_time:
-            return scheduler_status.next_run_time
+            if scheduler_status.next_run_time > now:
+                return scheduler_status.next_run_time
     except Exception as e:
         logger.warning(f"Could not get scheduler status: {e}")
     
@@ -345,7 +348,12 @@ async def _get_next_scan_time(db: AsyncSession) -> Optional[datetime]:
     config = result.scalar_one_or_none()
     
     if config and config.next_run_at:
-        return config.next_run_at
+        # Only return future dates
+        next_run = config.next_run_at
+        if next_run.tzinfo is None:
+            next_run = next_run.replace(tzinfo=timezone.utc)
+        if next_run > now:
+            return config.next_run_at
     
     return None
 
