@@ -216,7 +216,7 @@ export function DatabaseConfig({ onConnectionChange }: DatabaseConfigProps) {
               onChange={handleInputChange}
               placeholder="localhost"
               disabled={isProcessing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
             />
           </div>
 
@@ -233,7 +233,7 @@ export function DatabaseConfig({ onConnectionChange }: DatabaseConfigProps) {
               onChange={handleInputChange}
               placeholder="5432"
               disabled={isProcessing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
             />
           </div>
 
@@ -250,7 +250,7 @@ export function DatabaseConfig({ onConnectionChange }: DatabaseConfigProps) {
               onChange={handleInputChange}
               placeholder="mydb"
               disabled={isProcessing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
             />
           </div>
 
@@ -267,7 +267,7 @@ export function DatabaseConfig({ onConnectionChange }: DatabaseConfigProps) {
               onChange={handleInputChange}
               placeholder="postgres"
               disabled={isProcessing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
             />
           </div>
 
@@ -284,7 +284,7 @@ export function DatabaseConfig({ onConnectionChange }: DatabaseConfigProps) {
               onChange={handleInputChange}
               placeholder={activeConnection ? '••••••••' : 'Enter password'}
               disabled={isProcessing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
             />
             {activeConnection && (
               <p className="text-xs text-gray-500 mt-1">
