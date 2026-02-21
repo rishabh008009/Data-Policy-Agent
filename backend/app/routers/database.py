@@ -669,10 +669,13 @@ async def trigger_scan(
         scan_history.status = ScanStatus.FAILED.value
         scan_history.completed_at = datetime.now(timezone.utc)
         scan_history.error_message = str(e)
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
         
         logger.error(f"Unexpected error during scan: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred during the compliance scan.",
+            detail=f"Scan error: {str(e)[:500]}",
         )

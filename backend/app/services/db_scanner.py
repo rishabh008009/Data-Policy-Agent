@@ -638,9 +638,9 @@ class DatabaseScannerService:
                 logger.error(f"Error processing rule '{rule.rule_code}': {e}")
                 continue
         
-        # Commit all violations to the database
+        # Flush all violations to the database (don't commit — caller manages the session)
         if violations:
-            await db_session.commit()
+            await db_session.flush()
             logger.info(f"Created {len(violations)} violations")
         
         return violations
