@@ -305,12 +305,12 @@ class OpenAIClient(BaseLLMClient):
 class GeminiClient(BaseLLMClient):
     """LLM client implementation using Google Gemini API."""
 
-    def __init__(self, api_key: str, model: str = "gemini-2.5-flash-preview-05-20"):
+    def __init__(self, api_key: str, model: str = "gemini-2.5-flash"):
         """Initialize the Gemini client.
         
         Args:
             api_key: Google Gemini API key.
-            model: Model name to use (default: gemini-2.5-flash-preview-05-20).
+            model: Model name to use (default: gemini-2.5-flash).
         """
         import google.generativeai as genai
         
@@ -373,7 +373,7 @@ class LLMClient:
                 raise ValueError("Gemini API key is required when using Gemini provider")
             return GeminiClient(
                 api_key=settings.gemini_api_key,
-                model="gemini-2.5-flash-preview-05-20"
+                model="gemini-2.5-flash"
             )
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
@@ -388,7 +388,7 @@ class LLMClient:
             try:
                 return GeminiClient(
                     api_key=settings.gemini_api_key,
-                    model="gemini-2.5-pro-preview-06-05"
+                    model="gemini-2.5-pro"
                 )
             except Exception as e:
                 logger.warning(f"Failed to create Pro validator, falling back to single-model: {e}")
