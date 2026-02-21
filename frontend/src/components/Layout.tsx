@@ -44,10 +44,10 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      {/* Mobile overlay */}
+      {/* Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -57,7 +57,6 @@ export function Layout() {
         className={`
           fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white flex flex-col
           transform transition-transform duration-200 ease-in-out
-          lg:translate-x-0 lg:static lg:z-auto
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
@@ -66,9 +65,8 @@ export function Layout() {
             <h1 className="text-xl font-bold text-white">Data Policy Agent</h1>
             <p className="text-sm text-gray-400 mt-1">Compliance Monitoring</p>
           </div>
-          {/* Close button on mobile */}
           <button
-            className="lg:hidden p-1 text-gray-400 hover:text-white rounded"
+            className="p-1 text-gray-400 hover:text-white rounded"
             onClick={() => setSidebarOpen(false)}
             aria-label="Close sidebar"
           >
@@ -113,7 +111,7 @@ export function Layout() {
           <div className="px-4 sm:px-6 py-4 flex items-center gap-4">
             {/* Hamburger button */}
             <button
-              className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
+              className="p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open sidebar"
             >
