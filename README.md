@@ -78,7 +78,7 @@ npm run dev
 
 ### 4. Access the Application
 
-Open http://localhost:5173 in your browser.
+Open [https://data-policy-agent-production.up.railway.app](https://data-policy-agent-production.up.railway.app) in your browser.
 
 ## Demo Setup
 
