@@ -79,6 +79,38 @@ The explanation should:
 Return ONLY the explanation text, no additional formatting.
 """
 
+RULE_VALIDATION_PROMPT = """
+You are a senior compliance expert. You have been given a set of rules extracted from a policy document by another AI model.
+Your job is to VALIDATE and REFINE these rules by comparing them against the original policy text.
+
+Original Policy Document:
+{policy_text}
+
+Extracted Rules (JSON):
+{extracted_rules}
+
+For each rule, you must:
+1. VERIFY it is actually stated or clearly implied in the policy document. Remove any hallucinated rules.
+2. REFINE the evaluation_criteria to be more specific and actionable for database queries.
+3. CORRECT any inaccuracies in the description or severity.
+4. KEEP the same rule_code format.
+
+Return ONLY a JSON array of validated rules. Use the same format:
+[
+  {{
+    "rule_code": "DATA-001",
+    "description": "...",
+    "evaluation_criteria": "...",
+    "severity": "low|medium|high|critical",
+    "target_entities": "..."
+  }}
+]
+
+If a rule is hallucinated (not supported by the policy text), REMOVE it entirely.
+If a rule is valid but imprecise, REFINE it.
+Return ONLY the JSON array, no additional text.
+"""
+
 REMEDIATION_PROMPT = """
 Suggest remediation steps for the following compliance violation.
 
@@ -304,37 +336,29 @@ class GeminiClient(BaseLLMClient):
 
 
 class LLMClient:
-    """Factory class for creating LLM clients based on configuration.
+    """Factory class that implements a dual-model AI pipeline.
     
-    This class provides a unified interface for interacting with different
-    LLM providers (OpenAI, Gemini) based on application configuration.
+    For rule extraction, uses a two-step pipeline:
+      Step 1: Gemini 2.5 Flash (fast extraction)
+      Step 2: Gemini 2.5 Pro (validation & refinement)
+    
+    This reduces hallucination and improves rule quality.
+    For other operations (SQL, explanations), uses the Flash model.
     
     Usage:
         client = LLMClient()
-        rules = await client.extract_rules(policy_text)
+        rules = await client.extract_rules(policy_text)  # uses pipeline
         sql = await client.generate_sql(rule, schema)
-        explanation = await client.explain_violation(rule, record)
-        remediation = await client.suggest_remediation(violation)
     """
 
     def __init__(self):
-        """Initialize the LLM client based on configuration."""
+        """Initialize both Flash and Pro clients for the pipeline."""
         settings = get_settings()
         self._client = self._create_client(settings)
+        self._validator = self._create_validator(settings)
 
     def _create_client(self, settings) -> BaseLLMClient:
-        """Create the appropriate LLM client based on settings.
-        
-        Args:
-            settings: Application settings containing LLM configuration.
-            
-        Returns:
-            An instance of the appropriate LLM client.
-            
-        Raises:
-            ValueError: If the configured provider is not supported or
-                       the required API key is missing.
-        """
+        """Create the primary (Flash) LLM client for fast extraction."""
         provider = settings.llm_provider.lower()
         
         if provider == "openai":
@@ -347,63 +371,87 @@ class LLMClient:
         elif provider in ("gemini", "google"):
             if not settings.gemini_api_key:
                 raise ValueError("Gemini API key is required when using Gemini provider")
-            # Map common model names to Gemini equivalents
-            model = settings.llm_model
-            if model.startswith("gpt"):
-                model = "gemini-2.5-flash-preview-05-20"
-            elif model in ("gemini", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash"):
-                model = "gemini-2.5-flash-preview-05-20"
             return GeminiClient(
                 api_key=settings.gemini_api_key,
-                model=model
+                model="gemini-2.5-flash-preview-05-20"
             )
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
 
-    async def extract_rules(self, policy_text: str) -> list[dict[str, Any]]:
-        """Extract compliance rules from policy text.
+    def _create_validator(self, settings) -> BaseLLMClient | None:
+        """Create the validator (Pro) client for rule refinement.
         
-        Args:
-            policy_text: The raw text extracted from a policy document.
-            
-        Returns:
-            A list of dictionaries containing extracted rules.
+        Returns None if Gemini is not the provider (falls back to single-model).
         """
-        return await self._client.extract_rules(policy_text)
+        provider = settings.llm_provider.lower()
+        if provider in ("gemini", "google") and settings.gemini_api_key:
+            try:
+                return GeminiClient(
+                    api_key=settings.gemini_api_key,
+                    model="gemini-2.5-pro-preview-06-05"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to create Pro validator, falling back to single-model: {e}")
+                return None
+        return None
+
+    async def extract_rules(self, policy_text: str) -> list[dict[str, Any]]:
+        """Extract compliance rules using the dual-model pipeline.
+        
+        Step 1: Gemini Flash extracts rules (fast)
+        Step 2: Gemini Pro validates and refines them (accurate)
+        
+        Falls back to single-model if Pro is unavailable.
+        """
+        # Step 1: Fast extraction with Flash
+        logger.info("Pipeline Step 1: Extracting rules with Gemini Flash...")
+        raw_rules = await self._client.extract_rules(policy_text)
+        logger.info(f"Flash extracted {len(raw_rules)} rules")
+
+        # Step 2: Validate with Pro (if available)
+        if self._validator and raw_rules:
+            try:
+                logger.info("Pipeline Step 2: Validating rules with Gemini Pro...")
+                validation_prompt = RULE_VALIDATION_PROMPT.format(
+                    policy_text=policy_text,
+                    extracted_rules=json.dumps(raw_rules, indent=2)
+                )
+                response = await self._validator._generate(validation_prompt)
+
+                # Parse validated rules
+                cleaned = response.strip()
+                if cleaned.startswith("```json"):
+                    cleaned = cleaned[7:]
+                elif cleaned.startswith("```"):
+                    cleaned = cleaned[3:]
+                if cleaned.endswith("```"):
+                    cleaned = cleaned[:-3]
+                cleaned = cleaned.strip()
+
+                validated_rules = json.loads(cleaned)
+                if isinstance(validated_rules, list):
+                    logger.info(
+                        f"Pro validated: {len(validated_rules)} rules "
+                        f"(removed {len(raw_rules) - len(validated_rules)} hallucinated)"
+                    )
+                    return validated_rules
+                else:
+                    logger.warning("Pro returned non-list, using Flash results")
+            except Exception as e:
+                logger.warning(f"Pro validation failed, using Flash results: {e}")
+
+        return raw_rules
 
     async def generate_sql(self, rule: dict[str, Any], schema: dict[str, Any]) -> str:
-        """Generate SQL query to detect rule violations.
-        
-        Args:
-            rule: Dictionary containing rule details.
-            schema: Dictionary containing database schema information.
-            
-        Returns:
-            A SQL query string that selects violating records.
-        """
+        """Generate SQL query to detect rule violations."""
         return await self._client.generate_sql(rule, schema)
 
     async def explain_violation(self, rule: dict[str, Any], record: dict[str, Any]) -> str:
-        """Generate explanation for why a record violates a rule.
-        
-        Args:
-            rule: Dictionary containing rule details.
-            record: Dictionary containing the violating record's data.
-            
-        Returns:
-            A human-readable explanation of the violation.
-        """
+        """Generate explanation for why a record violates a rule."""
         return await self._client.explain_violation(rule, record)
 
     async def suggest_remediation(self, violation: dict[str, Any]) -> str:
-        """Generate remediation suggestion for a violation.
-        
-        Args:
-            violation: Dictionary containing violation details.
-            
-        Returns:
-            Actionable remediation steps to resolve the violation.
-        """
+        """Generate remediation suggestion for a violation."""
         return await self._client.suggest_remediation(violation)
 
 
