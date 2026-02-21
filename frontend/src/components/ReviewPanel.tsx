@@ -69,7 +69,7 @@ export function ReviewPanel({ violationId, currentStatus, onReviewComplete, onEr
         {successMessage && <div className="p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm">{successMessage}</div>}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add review notes..." rows={3} disabled={isLoading} className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50" />
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add review notes..." rows={3} disabled={isLoading} className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 bg-white text-black placeholder-gray-400" />
         </div>
         {canReview && (
           <div className="grid grid-cols-3 gap-3">

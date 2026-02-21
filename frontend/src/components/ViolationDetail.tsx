@@ -96,11 +96,11 @@ export function ViolationDetail({ violationId, ruleCode, ruleDescription, onClos
       </div>
       <div className="p-6 space-y-6">
         <div className="grid grid-cols-2 gap-4">
-          <div><p className="text-sm text-gray-500">Record ID</p><p className="font-mono bg-gray-50 px-3 py-2 rounded">{violation.record_identifier}</p></div>
-          <div><p className="text-sm text-gray-500">Detected</p><p className="bg-gray-50 px-3 py-2 rounded">{formatDateTime(violation.detected_at)}</p></div>
+          <div><p className="text-sm text-gray-500">Record ID</p><p className="font-mono bg-gray-50 text-gray-900 px-3 py-2 rounded">{violation.record_identifier}</p></div>
+          <div><p className="text-sm text-gray-500">Detected</p><p className="bg-gray-50 text-gray-900 px-3 py-2 rounded">{formatDateTime(violation.detected_at)}</p></div>
         </div>
-        <div><p className="text-sm text-gray-500 mb-2">Justification</p><div className={`p-4 rounded-lg border ${sev.border} ${sev.bg}`}><p className="whitespace-pre-wrap">{violation.justification || 'None'}</p></div></div>
-        <div><p className="text-sm text-gray-500 mb-2">Remediation</p><div className="p-4 rounded-lg border border-blue-200 bg-blue-50"><p className="whitespace-pre-wrap">{violation.remediation_suggestion || 'Manual review required'}</p></div></div>
+        <div><p className="text-sm text-gray-500 mb-2">Justification</p><div className={`p-4 rounded-lg border ${sev.border} ${sev.bg}`}><p className="whitespace-pre-wrap text-gray-900">{violation.justification || 'None'}</p></div></div>
+        <div><p className="text-sm text-gray-500 mb-2">Remediation</p><div className="p-4 rounded-lg border border-blue-200 bg-blue-50"><p className="whitespace-pre-wrap text-gray-900">{violation.remediation_suggestion || 'Manual review required'}</p></div></div>
       </div>
     </div>
   );
