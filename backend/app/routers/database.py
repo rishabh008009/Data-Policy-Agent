@@ -159,6 +159,45 @@ class ScanResponse(BaseModel):
     message: str = Field(..., description="Human-readable summary of the scan results")
 
 
+@router.get(
+    "/connection",
+    response_model=Optional[DatabaseConnectResponse],
+    responses={
+        404: {"model": ErrorResponse, "description": "No active connection"},
+    },
+    summary="Get active database connection",
+    description="Retrieve the currently active database connection configuration.",
+)
+async def get_active_connection(
+    db: AsyncSession = Depends(get_db),
+) -> DatabaseConnectResponse:
+    """Get the active database connection details."""
+    result = await db.execute(
+        select(DatabaseConnection)
+        .where(DatabaseConnection.is_active == True)
+        .order_by(DatabaseConnection.created_at.desc())
+        .limit(1)
+    )
+    connection = result.scalar_one_or_none()
+
+    if connection is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active database connection found.",
+        )
+
+    return DatabaseConnectResponse(
+        id=connection.id,
+        host=connection.host,
+        port=connection.port,
+        database_name=connection.database_name,
+        username=connection.username,
+        is_active=connection.is_active,
+        created_at=connection.created_at,
+        message="Active connection retrieved.",
+    )
+
+
 # API Endpoints
 
 @router.post(

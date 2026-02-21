@@ -18,9 +18,24 @@ import type {
  * @returns The connection test result
  */
 export async function connectDatabase(config: DBConnectionConfig): Promise<ConnectionTestResult> {
-  return handleApiResponse(
-    apiClient.post<ConnectionTestResult>('/database/connect', config)
-  );
+  try {
+    const data = await handleApiResponse(
+      apiClient.post<DatabaseConnection & { message: string }>('/database/connect', config)
+    );
+    return {
+      success: true,
+      message: data.message || 'Connected successfully',
+      connection: data,
+    };
+  } catch (err: unknown) {
+    const detail = (err && typeof err === 'object' && 'detail' in err)
+      ? (err as { detail: string }).detail
+      : 'Connection failed';
+    return {
+      success: false,
+      message: detail,
+    };
+  }
 }
 
 /**
