@@ -21,6 +21,7 @@ import {
 } from '../api';
 import type {
   PolicyResponse,
+  PolicyUploadResponse,
   PolicyWithRules,
   ComplianceRule,
   ApiError,
@@ -492,25 +493,12 @@ export function PoliciesPage() {
   /**
    * Handle successful upload
    */
-  const handleUploadSuccess = useCallback((policy: PolicyWithRules) => {
-    // Add the new policy to the list
-    setPolicies((prev) => [
-      {
-        id: policy.id,
-        filename: policy.filename,
-        status: policy.status,
-        uploaded_at: policy.uploaded_at,
-        rule_count: policy.rules?.length || 0,
-      },
-      ...prev,
-    ]);
-    // Cache the policy details
-    setPolicyDetails((prev) => ({ ...prev, [policy.id]: policy }));
-    // Expand the new policy
-    setExpandedPolicyId(policy.id);
+  const handleUploadSuccess = useCallback((_policy: PolicyUploadResponse) => {
+    // Re-fetch the full policy list from the server to get accurate rule counts
+    fetchPolicies();
     // Hide the upload form
     setShowUploadForm(false);
-  }, []);
+  }, [fetchPolicies]);
 
   // Load policies on mount
   useEffect(() => {

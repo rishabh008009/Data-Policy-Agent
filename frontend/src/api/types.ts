@@ -65,6 +65,15 @@ export interface PolicyResponse {
   rule_count: number;
 }
 
+export interface PolicyUploadResponse {
+  id: string;
+  filename: string;
+  status: string;
+  uploaded_at: string;
+  rule_count: number;
+  message: string;
+}
+
 export interface PolicyWithRules extends Policy {
   rules: ComplianceRule[];
 }

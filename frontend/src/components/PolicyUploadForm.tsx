@@ -9,7 +9,7 @@
 
 import { useCallback, useState, useRef } from 'react';
 import { uploadPolicy } from '../api';
-import type { PolicyWithRules, ApiError } from '../api/types';
+import type { PolicyUploadResponse, ApiError } from '../api/types';
 
 /**
  * Upload state enum for tracking component state
@@ -39,7 +39,7 @@ function isValidPdfFile(file: File): boolean {
  */
 interface PolicyUploadFormProps {
   /** Callback when upload succeeds */
-  onUploadSuccess?: (policy: PolicyWithRules) => void;
+  onUploadSuccess?: (policy: PolicyUploadResponse) => void;
   /** Callback when upload fails */
   onUploadError?: (error: string) => void;
   /** Maximum file size in bytes (default: 10MB) */
@@ -143,7 +143,7 @@ export function PolicyUploadForm({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [uploadedPolicy, setUploadedPolicy] = useState<PolicyWithRules | null>(null);
+  const [uploadedPolicy, setUploadedPolicy] = useState<PolicyUploadResponse | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -326,35 +326,16 @@ export function PolicyUploadForm({
               <div>
                 <span className="text-gray-600">Rules Extracted:</span>
                 <p className="font-medium text-gray-900">
-                  {uploadedPolicy.rules?.length || 0} rules
+                  {uploadedPolicy.rule_count} rules
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Extracted Rules Preview */}
-          {uploadedPolicy.rules && uploadedPolicy.rules.length > 0 && (
-            <div className="mt-4 text-left">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">
-                Extracted Rules:
-              </h4>
-              <ul className="space-y-2 max-h-40 overflow-y-auto">
-                {uploadedPolicy.rules.slice(0, 5).map((rule) => (
-                  <li
-                    key={rule.id}
-                    className="text-sm p-2 bg-gray-50 rounded border border-gray-200"
-                  >
-                    <span className="font-medium text-blue-600">{rule.rule_code}</span>
-                    <span className="text-gray-600"> - {rule.description}</span>
-                  </li>
-                ))}
-                {uploadedPolicy.rules.length > 5 && (
-                  <li className="text-sm text-gray-500 italic">
-                    ...and {uploadedPolicy.rules.length - 5} more rules
-                  </li>
-                )}
-              </ul>
-            </div>
+          {uploadedPolicy.rule_count > 0 && (
+            <p className="mt-4 text-sm text-green-600">
+              {uploadedPolicy.message}
+            </p>
           )}
 
           <button

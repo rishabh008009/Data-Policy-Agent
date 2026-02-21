@@ -3,19 +3,19 @@
  */
 
 import apiClient, { handleApiResponse } from './client';
-import type { PolicyResponse, PolicyWithRules } from './types';
+import type { PolicyResponse, PolicyUploadResponse, PolicyWithRules } from './types';
 
 /**
  * Upload a PDF policy document.
  * @param file - The PDF file to upload
- * @returns The created policy with extracted rules
+ * @returns The upload response with rule count
  */
-export async function uploadPolicy(file: File): Promise<PolicyWithRules> {
+export async function uploadPolicy(file: File): Promise<PolicyUploadResponse> {
   const formData = new FormData();
   formData.append('file', file);
 
   return handleApiResponse(
-    apiClient.post<PolicyWithRules>('/policies/upload', formData, {
+    apiClient.post<PolicyUploadResponse>('/policies/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
