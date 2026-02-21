@@ -151,6 +151,8 @@ class BaseLLMClient(ABC):
         """
         prompt = RULE_EXTRACTION_PROMPT.format(policy_text=policy_text)
         response = await self._generate(prompt)
+        
+        logger.info(f"LLM response length: {len(response)} chars")
 
         # Parse JSON from response
         cleaned = response.strip()
@@ -165,11 +167,13 @@ class BaseLLMClient(ABC):
         try:
             rules = json.loads(cleaned)
             if isinstance(rules, list):
+                logger.info(f"Parsed {len(rules)} rules from LLM response")
                 return rules
             logger.warning(f"LLM returned non-list type: {type(rules)}")
             return []
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse LLM response as JSON: {e}")
+            logger.error(f"Raw response (first 500 chars): {response[:500]}")
             return []
 
     async def generate_sql(self, rule: dict[str, Any], schema: dict[str, Any]) -> str:
@@ -406,14 +410,18 @@ class LLMClient:
                 cleaned = cleaned.strip()
 
                 validated_rules = json.loads(cleaned)
-                if isinstance(validated_rules, list):
+                if isinstance(validated_rules, list) and len(validated_rules) > 0:
                     logger.info(
                         f"Pro validated: {len(validated_rules)} rules "
                         f"(removed {len(raw_rules) - len(validated_rules)} hallucinated)"
                     )
                     return validated_rules
                 else:
-                    logger.warning("Pro returned non-list, using Flash results")
+                    logger.warning(
+                        f"Pro returned empty or non-list ({type(validated_rules).__name__}, "
+                        f"len={len(validated_rules) if isinstance(validated_rules, list) else 'N/A'}), "
+                        f"falling back to Flash results ({len(raw_rules)} rules)"
+                    )
             except Exception as e:
                 logger.warning(f"Pro validation failed, using Flash results: {e}")
 
