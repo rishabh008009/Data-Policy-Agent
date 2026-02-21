@@ -62,21 +62,21 @@ const Register: React.FC = () => {
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input id="email" type="email" placeholder="you@example.com" value={email}
               onChange={(e) => setEmail(e.target.value)} required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm" />
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm text-black" />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input id="password" type="password" placeholder="Min 6 characters" value={password}
               onChange={(e) => setPassword(e.target.value)} required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm" />
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm text-black" />
           </div>
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
             <input id="confirmPassword" type="password" placeholder="Re-enter password" value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)} required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm" />
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm text-black" />
           </div>
 
           <button type="submit" disabled={loading}
