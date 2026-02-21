@@ -24,7 +24,7 @@ const Login: React.FC = () => {
         password,
       });
       localStorage.setItem("token", response.data.token);
-      navigate("/dashboard");
+      navigate("/");
     } catch {
       setError("Invalid email or password!");
     } finally {
@@ -35,7 +35,7 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 px-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        {/* Logo & Branding */}
+        {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-600/30">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +46,7 @@ const Login: React.FC = () => {
           <p className="text-gray-500 mt-1 text-sm">AI-Powered Compliance Monitoring</p>
         </div>
 
-        {/* Login Form */}
+        {/* Form */}
         <form onSubmit={handleLogin} className="space-y-4">
           {error && (
             <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -58,9 +58,7 @@ const Login: React.FC = () => {
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               id="email"
               type="email"
@@ -73,9 +71,7 @@ const Login: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input
               id="password"
               type="password"
@@ -99,6 +95,13 @@ const Login: React.FC = () => {
               </svg>
             )}
             {loading ? "Signing in..." : "Sign In"}
+          </button>
+
+          <button
+            type="button"
+            className="w-full py-3 bg-white text-blue-600 border border-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+          >
+            Create New Account
           </button>
         </form>
 
