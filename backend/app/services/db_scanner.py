@@ -611,7 +611,10 @@ class DatabaseScannerService:
                 
                 # Create violations for each violating record (no LLM calls for speed)
                 for record in capped_records:
-                    record_data = dict(record)
+                    record_data = {
+                        k: (v.isoformat() if hasattr(v, 'isoformat') else str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v)
+                        for k, v in dict(record).items()
+                    }
                     record_identifier = self._get_record_identifier(record_data)
                     
                     # Use template-based justification (fast, no LLM)
