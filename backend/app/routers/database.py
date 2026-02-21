@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import async_session_maker, get_db
 from app.models.compliance_rule import ComplianceRule
 from app.models.database_connection import DatabaseConnection
 from app.models.enums import ScanStatus, Severity
@@ -380,12 +380,33 @@ async def get_database_schema(
         HTTPException: 400 if not connected, 500 for server errors
     """
     try:
-        # Check if connected
+        # Check if connected — auto-reconnect from saved connection if needed
         if not scanner.is_connected:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Not connected to a database. Please connect first using POST /api/database/connect.",
+            async with async_session_maker() as reconnect_db:
+                result = await reconnect_db.execute(
+                    select(DatabaseConnection)
+                    .where(DatabaseConnection.is_active == True)
+                    .order_by(DatabaseConnection.created_at.desc())
+                    .limit(1)
+                )
+                saved_conn = result.scalar_one_or_none()
+            
+            if saved_conn is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Not connected to a database. Please connect first using POST /api/database/connect.",
+                )
+            
+            connection_config = DBConnectionConfig(
+                host=saved_conn.host,
+                port=saved_conn.port,
+                database=saved_conn.database_name,
+                username=saved_conn.username,
+                password=saved_conn.encrypted_password,
+                ssl=False,
             )
+            await scanner.connect(connection_config)
+            logger.info(f"Auto-reconnected to database '{saved_conn.database_name}' for schema")
         
         # Retrieve schema
         logger.info("Retrieving database schema")
@@ -474,12 +495,41 @@ async def trigger_scan(
     Raises:
         HTTPException: 400 if not connected or no rules, 500 for server errors
     """
-    # Check if connected to target database
+    # Check if connected to target database — auto-reconnect from saved connection if needed
     if not scanner.is_connected:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Not connected to a database. Please connect first using POST /api/database/connect.",
+        # Try to reconnect using saved active connection
+        result = await db.execute(
+            select(DatabaseConnection)
+            .where(DatabaseConnection.is_active == True)
+            .order_by(DatabaseConnection.created_at.desc())
+            .limit(1)
         )
+        saved_conn = result.scalar_one_or_none()
+        
+        if saved_conn is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Not connected to a database. Please connect first using POST /api/database/connect.",
+            )
+        
+        # Reconnect using saved credentials
+        try:
+            connection_config = DBConnectionConfig(
+                host=saved_conn.host,
+                port=saved_conn.port,
+                database=saved_conn.database_name,
+                username=saved_conn.username,
+                password=saved_conn.encrypted_password,
+                ssl=False,
+            )
+            await scanner.connect(connection_config)
+            logger.info(f"Auto-reconnected to database '{saved_conn.database_name}' for scan")
+        except Exception as e:
+            logger.error(f"Failed to auto-reconnect for scan: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Failed to reconnect to database: {e}",
+            )
     
     # Create scan history record
     scan_history = ScanHistory(
