@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import {
   DashboardPage,
@@ -8,18 +8,27 @@ import {
 } from "./pages";
 import Login from "./pages/Login";
 
-/**
- * Main application component with routing configuration.
- * Uses React Router for navigation between pages.
- */
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <Routes>
-      {/* Public Route */}
       <Route path="/login" element={<Login />} />
 
-      {/* Protected Layout Routes */}
-      <Route path="/" element={<Layout />}>
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<DashboardPage />} />
         <Route path="policies" element={<PoliciesPage />} />
         <Route path="violations" element={<ViolationsPage />} />

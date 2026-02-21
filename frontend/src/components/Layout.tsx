@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 interface NavItem {
   to: string;
@@ -41,6 +41,12 @@ const navItems: NavItem[] = [
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -101,7 +107,16 @@ export function Layout() {
         </nav>
 
         <div className="p-4 border-t border-gray-700">
-          <p className="text-xs text-gray-500 text-center">© 2026 Data Policy Agent</p>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors text-sm"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Logout</span>
+          </button>
+          <p className="text-xs text-gray-500 text-center mt-3">© 2026 Data Policy Agent</p>
         </div>
       </aside>
 
