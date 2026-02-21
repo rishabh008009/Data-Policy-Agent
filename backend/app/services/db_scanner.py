@@ -579,6 +579,8 @@ class DatabaseScannerService:
         
         logger.info(f"Scanning {len(active_rules)} active rules for violations")
         
+        MAX_VIOLATIONS_PER_RULE = 50  # Limit to avoid overwhelming the system
+        
         for rule in active_rules:
             try:
                 # Generate SQL if not already present
@@ -588,6 +590,9 @@ class DatabaseScannerService:
                         sql_query = await self.generate_query(rule, schema, llm_client)
                     except SQLGenerationError as e:
                         logger.warning(f"Skipping rule '{rule.rule_code}': {e}")
+                        continue
+                    except Exception as e:
+                        logger.warning(f"Skipping rule '{rule.rule_code}' (SQL gen failed): {e}")
                         continue
                 
                 # Execute the query against the target database
@@ -601,38 +606,29 @@ class DatabaseScannerService:
                 
                 logger.info(f"Found {len(records)} potential violations for rule '{rule.rule_code}'")
                 
-                # Create violations for each violating record
-                for record in records:
-                    # Convert record to dict
+                # Limit violations per rule
+                capped_records = records[:MAX_VIOLATIONS_PER_RULE]
+                
+                # Create violations for each violating record (no LLM calls for speed)
+                for record in capped_records:
                     record_data = dict(record)
-                    
-                    # Determine record identifier (use first column or 'id' if present)
                     record_identifier = self._get_record_identifier(record_data)
                     
-                    # Generate justification using LLM
-                    justification = await self.generate_justification(
-                        rule=rule,
-                        record_data=record_data,
-                        llm_client=llm_client,
+                    # Use template-based justification (fast, no LLM)
+                    justification = (
+                        f"Record violates rule '{rule.rule_code}': {rule.description}. "
+                        f"Evaluation criteria: {rule.evaluation_criteria}"
                     )
+                    remediation = f"Review record '{record_identifier}' and ensure compliance with rule '{rule.rule_code}'."
                     
-                    # Generate remediation suggestion using LLM
-                    remediation = await self.generate_remediation(
-                        rule=rule,
-                        record_data=record_data,
-                        justification=justification,
-                        llm_client=llm_client,
-                    )
-                    
-                    # Create Violation record with all required fields
                     violation = Violation(
                         rule_id=rule.id,
                         record_identifier=record_identifier,
                         record_data=record_data,
                         justification=justification,
                         remediation_suggestion=remediation,
-                        severity=rule.severity,  # Inherit severity from rule
-                        status=ViolationStatus.PENDING.value,  # Initial status is pending
+                        severity=rule.severity,
+                        status=ViolationStatus.PENDING.value,
                     )
                     
                     db_session.add(violation)

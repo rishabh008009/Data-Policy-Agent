@@ -70,7 +70,7 @@ export async function getDatabaseSchema(): Promise<DatabaseSchema> {
 export async function triggerScan(request?: ScanRequest): Promise<ScanResult> {
   return handleApiResponse(
     apiClient.post<ScanResult>('/database/scan', request || {}, {
-      timeout: 300000, // 5 minute timeout for scans
+      timeout: 600000, // 10 minute timeout for scans
     })
   );
 }
