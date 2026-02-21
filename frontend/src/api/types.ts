@@ -256,6 +256,9 @@ export interface ScheduleConfig {
 
 export interface DashboardSummary {
   total_violations: number;
+  total_policies: number;
+  total_rules: number;
+  total_transactions: number;
   pending_count: number;
   confirmed_count: number;
   resolved_count: number;

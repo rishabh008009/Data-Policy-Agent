@@ -288,14 +288,38 @@ export function DashboardPage() {
         </p>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards - Row 1: Data Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <SummaryCard
-          title="Total Violations"
-          value={summary.total_violations}
+          title="Policies Uploaded"
+          value={summary.total_policies}
           icon={<TotalIcon />}
           colorClass="text-blue-600"
         />
+        <SummaryCard
+          title="Rules Extracted"
+          value={summary.total_rules}
+          icon={<ResolvedIcon />}
+          colorClass="text-green-600"
+          subtitle="From all policies"
+        />
+        <SummaryCard
+          title="Transactions"
+          value={summary.total_transactions}
+          icon={<ConfirmedIcon />}
+          colorClass="text-purple-600"
+          subtitle="In database"
+        />
+        <SummaryCard
+          title="Total Violations"
+          value={summary.total_violations}
+          icon={<PendingIcon />}
+          colorClass="text-red-600"
+        />
+      </div>
+
+      {/* Summary Cards - Row 2: Violation Status */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <SummaryCard
           title="Pending Review"
           value={summary.pending_count}

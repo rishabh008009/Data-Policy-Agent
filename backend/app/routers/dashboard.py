@@ -17,8 +17,10 @@ from sqlalchemy import and_, cast, func, select, Date
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.compliance_rule import ComplianceRule
 from app.models.enums import Severity, ViolationStatus
 from app.models.monitoring_config import MonitoringConfig
+from app.models.policy import Policy
 from app.models.scan_history import ScanHistory
 from app.models.violation import Violation
 from app.services.scheduler import get_monitoring_scheduler
@@ -65,6 +67,18 @@ class DashboardSummaryResponse(BaseModel):
     total_violations: int = Field(
         default=0,
         description="Total number of violations in the system",
+    )
+    total_policies: int = Field(
+        default=0,
+        description="Total number of uploaded policies",
+    )
+    total_rules: int = Field(
+        default=0,
+        description="Total number of extracted compliance rules",
+    )
+    total_transactions: int = Field(
+        default=0,
+        description="Total number of transactions in the database",
     )
     pending_count: int = Field(
         default=0,
@@ -142,6 +156,26 @@ async def get_dashboard_summary(
         )
         total_violations = total_result.scalar() or 0
         
+        # Get total policies count
+        policies_result = await db.execute(
+            select(func.count(Policy.id))
+        )
+        total_policies = policies_result.scalar() or 0
+        
+        # Get total rules count
+        rules_result = await db.execute(
+            select(func.count(ComplianceRule.id))
+        )
+        total_rules = rules_result.scalar() or 0
+        
+        # Get total transactions count
+        from sqlalchemy import text
+        try:
+            tx_result = await db.execute(text("SELECT count(*) FROM transactions"))
+            total_transactions = tx_result.scalar() or 0
+        except Exception:
+            total_transactions = 0
+        
         # Get violations count by status
         status_counts = await _get_violations_by_status(db)
         
@@ -161,6 +195,9 @@ async def get_dashboard_summary(
         
         return DashboardSummaryResponse(
             total_violations=total_violations,
+            total_policies=total_policies,
+            total_rules=total_rules,
+            total_transactions=total_transactions,
             pending_count=status_counts.pending,
             confirmed_count=status_counts.confirmed,
             resolved_count=status_counts.resolved,
