@@ -144,58 +144,33 @@ class BaseLLMClient(ABC):
         pass
 
     async def extract_rules(self, policy_text: str) -> list[dict[str, Any]]:
-        """Extract compliance rules using the dual-model pipeline.
+        """Extract compliance rules from policy text using the LLM.
 
-        Step 1: Gemini Flash extracts rules (fast)
-        Step 2: Gemini Pro validates and refines them (accurate)
-
-        Falls back to Flash-only if Pro is unavailable or returns suspicious results.
+        Sends the policy text to the model and parses the JSON response
+        into a list of rule dictionaries.
         """
-        # Step 1: Fast extraction with Flash
-        logger.info("Pipeline Step 1: Extracting rules with Gemini Flash...")
-        raw_rules = await self._client.extract_rules(policy_text)
-        logger.info(f"Flash extracted {len(raw_rules)} rules")
+        prompt = RULE_EXTRACTION_PROMPT.format(policy_text=policy_text)
+        response = await self._generate(prompt)
 
-        if not raw_rules:
-            logger.warning("Flash extracted 0 rules, returning empty")
-            return raw_rules
+        # Parse JSON from response
+        cleaned = response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
 
-        # Step 2: Validate with Pro (if available)
-        if self._validator:
-            try:
-                logger.info("Pipeline Step 2: Validating rules with Gemini Pro...")
-                validation_prompt = RULE_VALIDATION_PROMPT.format(
-                    policy_text=policy_text,
-                    extracted_rules=json.dumps(raw_rules, indent=2)
-                )
-                response = await self._validator._generate(validation_prompt)
-
-                # Parse validated rules
-                cleaned = response.strip()
-                if cleaned.startswith("```json"):
-                    cleaned = cleaned[7:]
-                elif cleaned.startswith("```"):
-                    cleaned = cleaned[3:]
-                if cleaned.endswith("```"):
-                    cleaned = cleaned[:-3]
-                cleaned = cleaned.strip()
-
-                validated_rules = json.loads(cleaned)
-                if isinstance(validated_rules, list) and len(validated_rules) > 0:
-                    logger.info(
-                        f"Pro validated: {len(validated_rules)} rules "
-                        f"(removed {len(raw_rules) - len(validated_rules)} hallucinated)"
-                    )
-                    return validated_rules
-                else:
-                    logger.warning(
-                        f"Pro returned empty or non-list ({type(validated_rules)}), "
-                        f"using Flash results ({len(raw_rules)} rules)"
-                    )
-            except Exception as e:
-                logger.warning(f"Pro validation failed, using Flash results: {e}")
-
-        return raw_rules
+        try:
+            rules = json.loads(cleaned)
+            if isinstance(rules, list):
+                return rules
+            logger.warning(f"LLM returned non-list type: {type(rules)}")
+            return []
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM response as JSON: {e}")
+            return []
 
     async def generate_sql(self, rule: dict[str, Any], schema: dict[str, Any]) -> str:
         """Generate SQL query to detect rule violations.
