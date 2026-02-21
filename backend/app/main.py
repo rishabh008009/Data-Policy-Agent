@@ -4,7 +4,7 @@ import bcrypt
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from jose import jwt
 from datetime import datetime, timedelta
 
