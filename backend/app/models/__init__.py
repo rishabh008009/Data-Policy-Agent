@@ -16,6 +16,7 @@ from app.models.monitoring_config import MonitoringConfig
 from app.models.policy import Policy
 from app.models.review_action import ReviewAction
 from app.models.scan_history import ScanHistory
+from app.models.user import User
 from app.models.violation import Violation
 
 __all__ = [
@@ -27,6 +28,7 @@ __all__ = [
     "DatabaseConnection",
     "ScanHistory",
     "MonitoringConfig",
+    "User",
     # Enums
     "ViolationStatus",
     "Severity",

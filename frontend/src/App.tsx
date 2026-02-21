@@ -7,6 +7,7 @@ import {
   SettingsPage,
 } from "./pages";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("token");
@@ -20,6 +21,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
 
       <Route
         path="/"
