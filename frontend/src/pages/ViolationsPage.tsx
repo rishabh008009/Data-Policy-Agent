@@ -4,12 +4,17 @@
  */
 
 import { useCallback, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import ViolationList from '../components/ViolationList';
 import ViolationDetail from '../components/ViolationDetail';
 import ReviewPanel from '../components/ReviewPanel';
-import type { Violation, ViolationResponse } from '../api/types';
+import type { Violation, ViolationResponse, ViolationStatus, Severity } from '../api/types';
 
 export function ViolationsPage() {
+  const [searchParams] = useSearchParams();
+  const initialStatus = searchParams.get('status') as ViolationStatus | null;
+  const initialSeverity = searchParams.get('severity') as Severity | null;
+
   const [selectedViolation, setSelectedViolation] = useState<ViolationResponse | null>(null);
   const [violationData, setViolationData] = useState<Violation | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -64,9 +69,13 @@ export function ViolationsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className={selectedViolation ? 'lg:col-span-2' : 'lg:col-span-3'}>
           <ViolationList
-            key={refreshKey}
+            key={`${refreshKey}-${initialStatus}-${initialSeverity}`}
             onSelectViolation={handleSelectViolation}
             selectedViolationId={selectedViolation?.id}
+            initialFilters={{
+              ...(initialStatus ? { status: initialStatus } : {}),
+              ...(initialSeverity ? { severity: initialSeverity } : {}),
+            }}
           />
         </div>
 

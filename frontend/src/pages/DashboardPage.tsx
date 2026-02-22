@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getDashboardSummary } from '../api';
 import type { DashboardSummary, Severity } from '../api/types';
 import { TrendChart } from '../components/TrendChart';
@@ -56,11 +57,18 @@ interface SummaryCardProps {
   icon: React.ReactNode;
   colorClass: string;
   subtitle?: string;
+  onClick?: () => void;
 }
 
-function SummaryCard({ title, value, icon, colorClass, subtitle }: SummaryCardProps) {
+function SummaryCard({ title, value, icon, colorClass, subtitle, onClick }: SummaryCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div
+      className={`bg-white rounded-lg shadow p-6 ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
@@ -219,6 +227,7 @@ export function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -326,18 +335,21 @@ export function DashboardPage() {
           icon={<PendingIcon />}
           colorClass="text-yellow-600"
           subtitle="Needs attention"
+          onClick={() => navigate('/violations?status=pending')}
         />
         <SummaryCard
           title="Confirmed"
           value={summary.confirmed_count}
           icon={<ConfirmedIcon />}
           colorClass="text-red-600"
+          onClick={() => navigate('/violations?status=confirmed')}
         />
         <SummaryCard
           title="Resolved"
           value={summary.resolved_count}
           icon={<ResolvedIcon />}
           colorClass="text-green-600"
+          onClick={() => navigate('/violations?status=resolved')}
         />
       </div>
 
@@ -423,6 +435,13 @@ export function DashboardPage() {
           >
             <ConfirmedIcon />
             <span>Critical Issues ({summary.by_severity.critical || 0})</span>
+          </a>
+          <a
+            href="/violations?status=resolved"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
+          >
+            <ResolvedIcon />
+            <span>Resolved Cases ({summary.resolved_count})</span>
           </a>
           <a
             href="/policies"
